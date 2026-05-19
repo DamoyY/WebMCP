@@ -4,6 +4,7 @@ from pathlib import PurePosixPath
 from urllib.parse import urlparse
 import httpx
 from web_mcp.config import DirectFetchConfig, HttpConfig
+from web_mcp.errors import ClientFacingError, http_service_error, upstream_timeout
 
 
 @dataclass(frozen=True)
@@ -38,12 +39,22 @@ async def fetch_direct_text(
         "Range": f"bytes=0-{direct_config.max_bytes}",
     }
     timeout = httpx.Timeout(http_config.direct_fetch_timeout_seconds)
-    async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
-        response = await client.get(target.raw_url, headers=headers)
-    response.raise_for_status()
+    try:
+        async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
+            response = await client.get(target.raw_url, headers=headers)
+    except httpx.TimeoutException as error:
+        raise upstream_timeout("direct file fetch") from error
+    except httpx.RequestError as error:
+        raise ClientFacingError(
+            "Could not fetch the direct text file. Check that the URL is reachable."
+        ) from error
+    if response.status_code >= 400:
+        raise http_service_error("direct file fetch", response.status_code)
     content = response.content
     if len(content) > direct_config.max_bytes:
-        raise ValueError(f"direct file is larger than {direct_config.max_bytes} bytes")
+        raise ClientFacingError(
+            f"Direct text file is larger than the allowed {direct_config.max_bytes} bytes."
+        )
     return content.decode(response.encoding or "utf-8", errors="replace")
 
 

@@ -22,7 +22,7 @@ def test_select_rejects_out_of_range_chunk() -> None:
     try:
         chunker.select("short text", 2)
     except ValueError as error:
-        assert "out of range" in str(error)
+        assert str(error) == "chunk must be between 1 and 1"
     else:
         raise AssertionError("expected ValueError")
 

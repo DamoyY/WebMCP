@@ -2,6 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import tiktoken
 from web_mcp.config import ChunkingConfig
+from web_mcp.errors import ClientFacingError
 
 
 @dataclass(frozen=True)
@@ -63,9 +64,7 @@ class TokenChunker:
     def select(self, text: str, chunk_index: int) -> tuple[TextChunk, int, int]:
         chunks = self.split(text)
         if chunk_index > len(chunks):
-            raise ValueError(
-                f"chunk {chunk_index} is out of range; total chunks: {len(chunks)}"
-            )
+            raise ClientFacingError(f"chunk must be between 1 and {len(chunks)}")
         return chunks[chunk_index - 1], len(chunks), self.count_tokens(text)
 
 

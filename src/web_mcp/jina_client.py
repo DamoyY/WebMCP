@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Any
 import httpx
 from web_mcp.config import HttpConfig, JinaConfig
+from web_mcp.errors import ClientFacingError, http_service_error, upstream_timeout
 
 
 class JinaReaderClient:
@@ -17,16 +18,21 @@ class JinaReaderClient:
             "X-Return-Format": self._jina_config.return_format,
             "X-Engine": self._jina_config.engine,
         }
-        async with httpx.AsyncClient(
-            timeout=self._timeout, follow_redirects=True
-        ) as client:
-            response = await client.post(
-                self._jina_config.endpoint, headers=headers, json={"url": url}
-            )
+        try:
+            async with httpx.AsyncClient(
+                timeout=self._timeout, follow_redirects=True
+            ) as client:
+                response = await client.post(
+                    self._jina_config.endpoint, headers=headers, json={"url": url}
+                )
+        except httpx.TimeoutException as error:
+            raise upstream_timeout("Jina") from error
+        except httpx.RequestError as error:
+            raise ClientFacingError(
+                "Could not reach Jina. Check network connectivity and retry."
+            ) from error
         if response.status_code >= 400:
-            raise ValueError(
-                f"Jina request failed with HTTP {response.status_code}: {response.text[:300]}"
-            )
+            raise http_service_error("Jina", response.status_code)
         return _extract_content(response)
 
 
@@ -48,4 +54,6 @@ def _extract_content(response: httpx.Response) -> str:
                 return value
     if isinstance(payload, str):
         return payload
-    raise ValueError("Jina response does not contain markdown content")
+    raise ClientFacingError(
+        "Jina returned an unsupported response. Retry later or try another URL."
+    )

@@ -3,8 +3,10 @@ import asyncio
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from urllib.parse import urlparse
+import httpx
 from exa_py import AsyncExa
 from web_mcp.config import SearchConfig
+from web_mcp.errors import ClientFacingError, http_service_error, upstream_timeout
 from web_mcp.models import SearchQueryRequest, SearchResult
 
 
@@ -23,21 +25,26 @@ class ExaSearchClient:
     async def _search_one(
         self, client: AsyncExa, request: SearchQueryRequest
     ) -> list[SearchResult]:
-        response = await client.search(
-            request.q,
-            type=self._config.type,
-            num_results=self._config.num_results,
-            category=request.category,
-            include_domains=_normalize_domains(request.domains),
-            start_published_date=self._start_published_date(request.recency),
-            contents={
-                "highlights": {
-                    "query": request.q,
-                    "max_characters": self._config.highlights_max_characters,
+        try:
+            response = await client.search(
+                request.q,
+                type=self._config.type,
+                num_results=self._config.num_results,
+                category=request.category,
+                include_domains=_normalize_domains(request.domains),
+                start_published_date=self._start_published_date(request.recency),
+                contents={
+                    "highlights": {
+                        "query": request.q,
+                        "max_characters": self._config.highlights_max_characters,
+                    },
+                    "max_age_hours": self._config.max_age_hours,
                 },
-                "max_age_hours": self._config.max_age_hours,
-            },
-        )
+            )
+        except httpx.TimeoutException as error:
+            raise upstream_timeout("Exa") from error
+        except Exception as error:
+            raise _to_exa_client_error(error) from error
         return [_to_search_result(result) for result in response.results]
 
     def _start_published_date(self, recency: int | None) -> str | None:
@@ -75,3 +82,20 @@ def _to_search_result(result: Any) -> SearchResult:
         url=str(result.url),
         summary=summary,
     )
+
+
+def _to_exa_client_error(error: Exception) -> ClientFacingError:
+    status_code = _status_code(error)
+    if status_code is not None:
+        return http_service_error("Exa", status_code)
+    return ClientFacingError(
+        "Exa search request failed. Check the API key header, query parameters, and retry."
+    )
+
+
+def _status_code(error: Exception) -> int | None:
+    response = getattr(error, "response", None)
+    status_code = getattr(response, "status_code", None) or getattr(
+        error, "status_code", None
+    )
+    return status_code if isinstance(status_code, int) else None

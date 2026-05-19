@@ -1,4 +1,5 @@
 from __future__ import annotations
+import re
 from web_mcp.chunking import TokenChunker
 from web_mcp.config import ChunkingConfig, FindConfig
 from web_mcp.models import FindPage
@@ -18,7 +19,7 @@ def test_find_in_page_returns_chunk_number_and_snippet() -> None:
         url="https://example.com", source="jina", markdown="alpha beta gamma"
     )
     result = _find_in_page(
-        page, r"beta", 8, TokenChunker(_Config.chunking), _Config.find
+        page, re.compile(r"beta"), 8, TokenChunker(_Config.chunking), _Config.find
     )
     assert isinstance(result, FindPage)
     assert result.model_dump() == {

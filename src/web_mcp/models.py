@@ -33,6 +33,11 @@ class SearchQueryResponse(BaseModel):
     results: list[SearchResult]
 
 
+class SearchQueryArguments(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    requests: list[SearchQueryRequest]
+
+
 class OpenRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     url: str
@@ -43,7 +48,7 @@ class OpenRequest(BaseModel):
     def validate_url(cls, value: str) -> str:
         parsed = urlparse(value)
         if parsed.scheme not in {"http", "https"} or not parsed.netloc:
-            raise ValueError("url must be an absolute HTTP or HTTPS URL")
+            raise ValueError("must be an absolute HTTP or HTTPS URL")
         return value
 
 
@@ -55,6 +60,11 @@ class OpenPage(BaseModel):
 
 class OpenResponse(BaseModel):
     pages: list[OpenPage]
+
+
+class OpenArguments(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    requests: list[OpenRequest]
 
 
 class FindRequest(BaseModel):
@@ -81,3 +91,8 @@ class FindPage(BaseModel):
 
 class FindResponse(BaseModel):
     pages: list[FindPage]
+
+
+class FindArguments(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    requests: list[FindRequest]
