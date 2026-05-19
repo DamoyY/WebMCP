@@ -1,0 +1,4 @@
+config/
+scripts/__pycache__/
+src/web_mcp/__pycache__/
+tests/__pycache__/

@@ -1,0 +1,18 @@
+[Unit]
+Description=web MCP Streamable HTTP service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/web-mcp
+Environment=WEB_MCP_CONFIG=/opt/web-mcp/config/production.yaml
+Environment=PYTHONPATH=/opt/web-mcp/src
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/web-mcp/.venv/bin/python -m web_mcp.server
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
