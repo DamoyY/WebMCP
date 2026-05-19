@@ -3,26 +3,20 @@ name = "web-mcp"
 version = "0.1.0"
 description = "Streamable HTTP MCP service for Exa search and Jina page reading"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
-    "exa-py>=1.15.0",
-    "httpx>=0.28.1",
-    "mcp>=1.19.0",
-    "pydantic>=2.10.0",
-    "pyyaml>=6.0.2",
-    "starlette>=0.48.0",
-    "tiktoken>=0.11.0",
-    "uvicorn[standard]>=0.35.0",
+    "exa-py",
+    "httpx",
+    "mcp",
+    "pydantic",
+    "pyyaml",
+    "starlette",
+    "tiktoken",
+    "uvicorn[standard]",
 ]
 
 [dependency-groups]
-dev = [
-    "pyright>=1.1.400",
-    "pytest>=8.4.0",
-    "pytest-asyncio>=1.2.0",
-    "respx>=0.22.0",
-    "ruff>=0.14.0",
-]
+dev = ["pyright", "pytest", "pytest-asyncio", "respx", "ruff"]
 
 [project.scripts]
 web-mcp = "web_mcp.server:main"

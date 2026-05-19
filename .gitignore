@@ -2,4 +2,5 @@ config/
 scripts/__pycache__/
 src/web_mcp/__pycache__/
 tests/__pycache__/
+scripts/sync_to_server.ps1
 uv.lock

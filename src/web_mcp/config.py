@@ -73,6 +73,7 @@ class DirectFetchConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
     max_bytes: PositiveInt
     github_hosts: list[str]
+    huggingface_hosts: list[str]
     gitlab_hosts: list[str]
     bitbucket_hosts: list[str]
     text_file_extensions: list[str]

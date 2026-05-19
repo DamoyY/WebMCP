@@ -9,7 +9,7 @@ from web_mcp.tools import _find_in_page, _snippet_tokens_for_request
 
 class _Config:
     chunking = ChunkingConfig(
-        tokenizer="cl100k_base", chunk_tokens=100, overlap_ratio=0.1
+        tokenizer="o200k_base", chunk_tokens=100, overlap_ratio=0.1
     )
     find = FindConfig(default_snippet_tokens=8, max_matches_per_page=10)
 

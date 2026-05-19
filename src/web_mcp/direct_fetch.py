@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import PurePosixPath
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlencode, unquote, urlparse
 import httpx
 from web_mcp.config import DirectFetchConfig, HttpConfig
 from web_mcp.errors import ClientFacingError, http_service_error, upstream_timeout
@@ -20,10 +20,14 @@ def resolve_direct_fetch_target(
     host = parsed.netloc.lower()
     if host in config.github_hosts:
         raw_url = _github_raw_url(url, host, config)
+    elif host in config.huggingface_hosts:
+        raw_url = _huggingface_raw_url(url, host, config)
     elif host in config.gitlab_hosts:
         raw_url = _gitlab_raw_url(url, host, config)
     elif host in config.bitbucket_hosts:
         raw_url = _bitbucket_raw_url(url, host, config)
+    elif _is_wikipedia_host(host):
+        raw_url = _wikipedia_raw_url(url, host)
     else:
         raw_url = None
     if raw_url is None:
@@ -71,6 +75,28 @@ def _github_raw_url(url: str, host: str, config: DirectFetchConfig) -> str | Non
     return f"https://raw.githubusercontent.com/{parts[0]}/{parts[1]}/{parts[3]}/{file_path}"
 
 
+def _huggingface_raw_url(url: str, host: str, config: DirectFetchConfig) -> str | None:
+    parsed = urlparse(url)
+    parts = _path_parts(parsed.path)
+    marker_index = _huggingface_marker_index(parts)
+    if marker_index is None or len(parts) <= marker_index + 2:
+        return None
+    file_path = "/".join(parts[marker_index + 2 :])
+    if not _is_text_path(file_path, config):
+        return None
+    repo = "/".join(parts[:marker_index])
+    revision = parts[marker_index + 1]
+    return f"https://{host}/{repo}/resolve/{revision}/{file_path}"
+
+
+def _huggingface_marker_index(parts: list[str]) -> int | None:
+    minimum = 2 if parts[:1] in (["datasets"], ["spaces"]) else 1
+    for index, part in enumerate(parts):
+        if index >= minimum and part in {"blob", "raw", "resolve"}:
+            return index
+    return None
+
+
 def _gitlab_raw_url(url: str, host: str, config: DirectFetchConfig) -> str | None:
     parsed = urlparse(url)
     parts = _path_parts(parsed.path)
@@ -95,6 +121,39 @@ def _bitbucket_raw_url(url: str, host: str, config: DirectFetchConfig) -> str | 
     if not _is_text_path(file_path, config):
         return None
     return f"https://{host}/{parts[0]}/{parts[1]}/raw/{parts[3]}/{file_path}"
+
+
+def _is_wikipedia_host(host: str) -> bool:
+    return host == "wikipedia.org" or host.endswith(".wikipedia.org")
+
+
+def _wikipedia_raw_url(url: str, host: str) -> str | None:
+    parsed = urlparse(url)
+    if parsed.path.startswith("/wiki/"):
+        title = unquote(parsed.path.removeprefix("/wiki/"))
+        if not title:
+            return None
+        return _wikipedia_index_url(host, {"title": title, "action": "raw"})
+    if parsed.path != "/w/index.php":
+        return None
+    query = parse_qs(parsed.query)
+    title = _first_query_value(query, "title")
+    if not title:
+        return None
+    params = {"title": title, "action": "raw"}
+    oldid = _first_query_value(query, "oldid")
+    if oldid:
+        params["oldid"] = oldid
+    return _wikipedia_index_url(host, params)
+
+
+def _wikipedia_index_url(host: str, params: dict[str, str]) -> str:
+    return f"https://{host}/w/index.php?{urlencode(params)}"
+
+
+def _first_query_value(query: dict[str, list[str]], name: str) -> str | None:
+    values = query.get(name)
+    return values[0] if values else None
 
 
 def _is_text_path(path: str, config: DirectFetchConfig) -> bool:
