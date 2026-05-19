@@ -2,9 +2,10 @@ from __future__ import annotations
 import asyncio
 import re
 from collections.abc import Awaitable
-from typing import Any
+from typing import Any, ClassVar
+from mcp.server.fastmcp.utilities.func_metadata import ArgModelBase
 from mcp.server.fastmcp import Context, FastMCP
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, model_validator
 from web_mcp.chunking import TokenChunker
 from web_mcp.config import AppConfig, FindConfig
 from web_mcp.errors import (
@@ -14,6 +15,7 @@ from web_mcp.errors import (
 )
 from web_mcp.exa_client import ExaSearchClient
 from web_mcp.headers import exa_api_key, optional_header
+from web_mcp.input_normalization import normalize_tool_arguments
 from web_mcp.models import (
     FindArguments,
     FindMatch,
@@ -34,18 +36,22 @@ def register_tools(mcp: FastMCP, config: AppConfig) -> None:
     search_client = ExaSearchClient(config.search)
 
     @mcp.tool(name="search_query")
-    async def search_query(ctx: Context, requests: Any = None) -> SearchQueryResponse:
+    async def search_query(
+        ctx: Context, requests: Any = None, warning: str | None = None
+    ) -> SearchQueryResponse:
         """返回标题、日期、URL 与摘要。"""
         try:
             arguments = validate_request_arguments(SearchQueryArguments, requests)
             key = exa_api_key(ctx, config.headers)
             results = await search_client.search_many(arguments.requests, key)
-            return SearchQueryResponse(results=results)
+            return SearchQueryResponse(results=results, warning=warning)
         except Exception as error:
             raise to_tool_exception("search_query", error) from None
 
     @mcp.tool(name="open")
-    async def open_pages(ctx: Context, requests: Any = None) -> OpenResponse:
+    async def open_pages(
+        ctx: Context, requests: Any = None, warning: str | None = None
+    ) -> OpenResponse:
         """用于读取页面内容。"""
         try:
             arguments = validate_request_arguments(OpenArguments, requests)
@@ -63,12 +69,14 @@ def register_tools(mcp: FastMCP, config: AppConfig) -> None:
                         content=chunk.content,
                     )
                 )
-            return OpenResponse(pages=opened)
+            return OpenResponse(pages=opened, warning=warning)
         except Exception as error:
             raise to_tool_exception("open", error) from None
 
     @mcp.tool(name="find")
-    async def find(ctx: Context, requests: Any = None) -> FindResponse:
+    async def find(
+        ctx: Context, requests: Any = None, warning: str | None = None
+    ) -> FindResponse:
         """在页面中使用正则表达式查找匹配片段。"""
         try:
             arguments = validate_request_arguments(FindArguments, requests)
@@ -90,13 +98,13 @@ def register_tools(mcp: FastMCP, config: AppConfig) -> None:
                         config.find,
                     )
                 )
-            return FindResponse(pages=found)
+            return FindResponse(pages=found, warning=warning)
         except Exception as error:
             raise to_tool_exception("find", error) from None
 
-    _set_input_schema(mcp, "search_query", SearchQueryArguments)
-    _set_input_schema(mcp, "open", OpenArguments)
-    _set_input_schema(mcp, "find", FindArguments)
+    _set_tool_input_model(mcp, "search_query", SearchQueryArguments)
+    _set_tool_input_model(mcp, "open", OpenArguments)
+    _set_tool_input_model(mcp, "find", FindArguments)
 
 
 async def _fetch_pages(
@@ -153,7 +161,39 @@ def _match_to_output(
     )
 
 
-def _set_input_schema(
+class _TolerantToolArguments(ArgModelBase):
+    requests: Any = None
+    warning: str | None = None
+    arguments_model: ClassVar[type[BaseModel]]
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra="allow")
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_arguments(cls, data: Any) -> dict[str, Any]:
+        result = normalize_tool_arguments(cls.arguments_model, data)
+        return {"requests": result.requests, "warning": result.warning}
+
+
+class _SearchQueryToolArguments(_TolerantToolArguments):
+    arguments_model: ClassVar[type[BaseModel]] = SearchQueryArguments
+
+
+class _OpenToolArguments(_TolerantToolArguments):
+    arguments_model: ClassVar[type[BaseModel]] = OpenArguments
+
+
+class _FindToolArguments(_TolerantToolArguments):
+    arguments_model: ClassVar[type[BaseModel]] = FindArguments
+
+
+_TOOL_ARGUMENT_MODELS: dict[str, type[_TolerantToolArguments]] = {
+    "search_query": _SearchQueryToolArguments,
+    "open": _OpenToolArguments,
+    "find": _FindToolArguments,
+}
+
+
+def _set_tool_input_model(
     mcp: FastMCP, tool_name: str, arguments_model: type[BaseModel]
 ) -> None:
     manager = getattr(mcp, "_tool_manager", None)
@@ -161,3 +201,4 @@ def _set_input_schema(
     if tool is None:
         raise RuntimeError(f"tool {tool_name} was not registered")
     tool.parameters = arguments_model.model_json_schema()
+    tool.fn_metadata.arg_model = _TOOL_ARGUMENT_MODELS[tool_name]
