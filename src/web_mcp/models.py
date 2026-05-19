@@ -18,7 +18,7 @@ class SearchQueryRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     q: str = Field(min_length=1)
     recency: int | None = Field(default=None, ge=1)
-    domains: list[str] | str | None = None
+    domains: list[str] | None = None
     category: SearchCategory | None = None
 
 

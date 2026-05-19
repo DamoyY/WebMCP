@@ -4,7 +4,7 @@
 
 ## 工具
 
-- `search_query`：参数 `requests` 为 `Array<{ q: string, recency?: integer, domains?: string | string[], category?: string }>`
+- `search_query`：参数 `requests` 为 `Array<{ q: string, recency?: integer, domains?: string[], category?: string }>`
 - `open`：参数 `requests` 为 `Array<{ url: string, chunk?: integer }>`
 - `find`：参数 `requests` 为 `Array<{ url: string, pattern: string, snippet_tokens?: integer }>`
 

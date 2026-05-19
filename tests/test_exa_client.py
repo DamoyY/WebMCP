@@ -1,14 +1,17 @@
 from __future__ import annotations
+import pytest
+from pydantic import ValidationError
 from web_mcp.exa_client import _normalize_domains
+from web_mcp.models import SearchQueryRequest
 
 
-def test_normalize_domains_accepts_list_and_comma_string() -> None:
+def test_normalize_domains_accepts_list() -> None:
     assert _normalize_domains(["https://OpenAI.com/docs", "example.com"]) == [
         "openai.com",
         "example.com",
     ]
-    assert _normalize_domains("openai.com, example.org docs.example.net") == [
-        "openai.com",
-        "example.org",
-        "docs.example.net",
-    ]
+
+
+def test_search_query_request_rejects_domains_string() -> None:
+    with pytest.raises(ValidationError):
+        SearchQueryRequest.model_validate({"q": "OpenAI", "domains": "openai.com"})

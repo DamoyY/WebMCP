@@ -49,13 +49,10 @@ class ExaSearchClient:
         return (datetime.now(UTC) - timedelta(days=days)).date().isoformat()
 
 
-def _normalize_domains(domains: list[str] | str | None) -> list[str] | None:
+def _normalize_domains(domains: list[str] | None) -> list[str] | None:
     if domains is None:
         return None
-    raw_domains = domains
-    if isinstance(domains, str):
-        raw_domains = [part for item in domains.split(",") for part in item.split()]
-    normalized = [_normalize_domain(domain) for domain in raw_domains]
+    normalized = [_normalize_domain(domain) for domain in domains]
     return [domain for domain in normalized if domain] or None
 
 
