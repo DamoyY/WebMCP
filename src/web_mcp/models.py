@@ -31,7 +31,9 @@ class SearchResult(BaseModel):
 
 class SearchQueryResponse(BaseModel):
     results: list[SearchResult]
-    warning: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    warning: list[str] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
 
 class SearchQueryArguments(BaseModel):
@@ -61,7 +63,9 @@ class OpenPage(BaseModel):
 
 class OpenResponse(BaseModel):
     pages: list[OpenPage]
-    warning: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    warning: list[str] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
 
 class OpenArguments(BaseModel):
@@ -93,7 +97,9 @@ class FindPage(BaseModel):
 
 class FindResponse(BaseModel):
     pages: list[FindPage]
-    warning: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    warning: list[str] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
 
 class FindArguments(BaseModel):

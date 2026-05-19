@@ -37,7 +37,7 @@ def register_tools(mcp: FastMCP, config: AppConfig) -> None:
 
     @mcp.tool(name="search_query")
     async def search_query(
-        ctx: Context, requests: Any = None, warning: str | None = None
+        ctx: Context, requests: Any = None, warning: list[str] | None = None
     ) -> SearchQueryResponse:
         """返回标题、日期、URL 与摘要。"""
         try:
@@ -50,7 +50,7 @@ def register_tools(mcp: FastMCP, config: AppConfig) -> None:
 
     @mcp.tool(name="open")
     async def open_pages(
-        ctx: Context, requests: Any = None, warning: str | None = None
+        ctx: Context, requests: Any = None, warning: list[str] | None = None
     ) -> OpenResponse:
         """用于读取页面内容。"""
         try:
@@ -75,7 +75,7 @@ def register_tools(mcp: FastMCP, config: AppConfig) -> None:
 
     @mcp.tool(name="find")
     async def find(
-        ctx: Context, requests: Any = None, warning: str | None = None
+        ctx: Context, requests: Any = None, warning: list[str] | None = None
     ) -> FindResponse:
         """在页面中使用正则表达式查找匹配片段。"""
         try:
@@ -86,19 +86,21 @@ def register_tools(mcp: FastMCP, config: AppConfig) -> None:
             jina_key = optional_header(ctx, config.headers.jina_api_key)
             pages = await _fetch_pages(page_fetcher, arguments.requests, jina_key)
             found = []
-            for request, page, pattern in zip(
-                arguments.requests, pages, patterns, strict=True
+            warnings = list(warning or [])
+            for index, (request, page, pattern) in enumerate(
+                zip(arguments.requests, pages, patterns, strict=True)
             ):
-                found.append(
-                    _find_in_page(
-                        page,
-                        pattern,
-                        request.snippet_tokens or config.find.default_snippet_tokens,
-                        chunker,
-                        config.find,
-                    )
+                snippet_tokens = _snippet_tokens_for_request(
+                    request,
+                    config.chunking.chunk_tokens,
+                    config.find.default_snippet_tokens,
+                    index,
+                    warnings,
                 )
-            return FindResponse(pages=found, warning=warning)
+                found.append(
+                    _find_in_page(page, pattern, snippet_tokens, chunker, config.find)
+                )
+            return FindResponse(pages=found, warning=warnings or None)
         except Exception as error:
             raise to_tool_exception("find", error) from None
 
@@ -146,6 +148,24 @@ def _compile_pattern(pattern: str) -> re.Pattern[str]:
         ) from error
 
 
+def _snippet_tokens_for_request(
+    request: Any,
+    chunk_tokens: int,
+    default_snippet_tokens: int,
+    request_index: int,
+    warnings: list[str],
+) -> int:
+    if request.snippet_tokens is None:
+        return default_snippet_tokens
+    if request.snippet_tokens <= chunk_tokens:
+        return request.snippet_tokens
+    warnings.append(
+        f'"requests[{request_index}].snippet_tokens" exceeds chunk_tokens '
+        f"({chunk_tokens}); using {chunk_tokens}"
+    )
+    return chunk_tokens
+
+
 def _match_to_output(
     chunk_index: int,
     content: str,
@@ -163,7 +183,7 @@ def _match_to_output(
 
 class _TolerantToolArguments(ArgModelBase):
     requests: Any = None
-    warning: str | None = None
+    warning: list[str] | None = None
     arguments_model: ClassVar[type[BaseModel]]
     model_config = ConfigDict(arbitrary_types_allowed=True, extra="allow")
 

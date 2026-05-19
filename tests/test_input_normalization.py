@@ -1,5 +1,5 @@
 from __future__ import annotations
-from web_mcp.input_normalization import WARNING_PREFIX, normalize_tool_arguments
+from web_mcp.input_normalization import normalize_tool_arguments
 from web_mcp.models import OpenArguments, OpenResponse, SearchQueryArguments
 
 
@@ -9,7 +9,6 @@ def test_normalize_tool_arguments_accepts_direct_open_object() -> None:
     )
     assert result.requests == [{"url": "https://example.com", "chunk": 1}]
     assert result.warning is not None
-    assert result.warning.startswith(WARNING_PREFIX)
     assert 'wrap the request object in the "requests" array' in result.warning
     assert 'use "url" instead of "URL"' in result.warning
     assert (
@@ -58,8 +57,7 @@ def test_normalize_tool_arguments_ignores_unrecognized_request_fields() -> None:
 
 def test_normalize_tool_arguments_warns_for_site_syntax_in_q() -> None:
     result = normalize_tool_arguments(
-        SearchQueryArguments,
-        {"requests": [{"q": "site:example.com OpenAI"}]},
+        SearchQueryArguments, {"requests": [{"q": "site:example.com OpenAI"}]}
     )
     assert result.requests == [{"q": "site:example.com OpenAI"}]
     assert result.warning is not None
@@ -75,7 +73,7 @@ def test_normalize_tool_arguments_does_not_warn_for_canonical_input() -> None:
 
 
 def test_warning_is_omitted_from_response_without_normalization() -> None:
-    warning = f'{WARNING_PREFIX}pass "requests" as an array.'
+    warning = ['pass "requests" as an array']
     assert OpenResponse(pages=[]).model_dump() == {"pages": []}
     assert OpenResponse(pages=[], warning=warning).model_dump() == {
         "pages": [],
