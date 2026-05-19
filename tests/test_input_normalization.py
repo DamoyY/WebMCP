@@ -56,6 +56,16 @@ def test_normalize_tool_arguments_ignores_unrecognized_request_fields() -> None:
     assert 'ignored unrecognized field "debug"' in result.warning
 
 
+def test_normalize_tool_arguments_warns_for_site_syntax_in_q() -> None:
+    result = normalize_tool_arguments(
+        SearchQueryArguments,
+        {"requests": [{"q": "site:example.com OpenAI"}]},
+    )
+    assert result.requests == [{"q": "site:example.com OpenAI"}]
+    assert result.warning is not None
+    assert 'use "domains" instead of site: syntax in "requests[0].q"' in result.warning
+
+
 def test_normalize_tool_arguments_does_not_warn_for_canonical_input() -> None:
     result = normalize_tool_arguments(
         OpenArguments, {"requests": [{"url": "https://example.com", "chunk": 1}]}

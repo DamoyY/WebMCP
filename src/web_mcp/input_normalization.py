@@ -1,12 +1,14 @@
 from __future__ import annotations
 import json
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from types import UnionType
 from typing import Any, Literal, Union, get_args, get_origin
 from pydantic import BaseModel
 
-WARNING_PREFIX = "Input parameters were normalized: "
+WARNING_PREFIX = "Input parameter warnings: "
+SITE_QUERY_PATTERN = re.compile(r"(?<!\w)site\s*:", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -132,7 +134,9 @@ def _normalize_value_for_annotation(
     if model is not None:
         return _normalize_model_value(model, raw_value, warnings, path)
     value = _normalize_url(field_name, raw_value, warnings, path)
-    return _normalize_literal(annotation, value, warnings, path)
+    value = _normalize_literal(annotation, value, warnings, path)
+    _warn_site_query(field_name, value, warnings, path)
+    return value
 
 
 def _normalize_url(
@@ -168,6 +172,15 @@ def _normalize_literal(
     if normalized != value:
         warnings.add(f'use "{normalized}" instead of "{value}" for "{path}"')
     return normalized
+
+
+def _warn_site_query(
+    field_name: str, value: Any, warnings: _WarningBuilder, path: str
+) -> None:
+    if field_name != "q" or not isinstance(value, str):
+        return
+    if SITE_QUERY_PATTERN.search(value):
+        warnings.add(f'use "domains" instead of site: syntax in "{path}"')
 
 
 def _matching_key(
