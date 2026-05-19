@@ -25,6 +25,9 @@ def normalize_tool_arguments(
         if requests_key is not None:
             if requests_key != "requests":
                 warnings.add(f'use "requests" instead of "{requests_key}"')
+            _warn_unused_model_fields(
+                arguments_model, data, {requests_key}, warnings, ""
+            )
             normalized_requests = _normalize_model_field(
                 arguments_model, "requests", data[requests_key], warnings, "requests"
             )
@@ -71,11 +74,11 @@ def _normalize_model_value(
     normalized: dict[Any, Any] = {}
     for raw_key, raw_item in value.items():
         if not isinstance(raw_key, str):
-            normalized[raw_key] = raw_item
+            warnings.add(f'ignored unrecognized field "{_field_path(path, raw_key)}"')
             continue
         canonical = lookup.get(raw_key.lower())
         if canonical is None:
-            normalized[raw_key] = raw_item
+            warnings.add(f'ignored unrecognized field "{_field_path(path, raw_key)}"')
             continue
         if canonical != raw_key:
             warnings.add(f'use "{canonical}" instead of "{raw_key}"')
@@ -170,11 +173,39 @@ def _normalize_literal(
 def _matching_key(
     model: type[BaseModel], data: Mapping[Any, Any], field_name: str
 ) -> str | None:
+    if field_name in data:
+        return field_name
     lookup = _field_lookup(model)
     for key in data:
         if isinstance(key, str) and lookup.get(key.lower()) == field_name:
             return key
     return None
+
+
+def _warn_unused_model_fields(
+    model: type[BaseModel],
+    data: Mapping[Any, Any],
+    used_keys: set[Any],
+    warnings: _WarningBuilder,
+    path: str,
+) -> None:
+    lookup = _field_lookup(model)
+    for key in data:
+        if key in used_keys:
+            continue
+        field_path = _field_path(path, key)
+        if not isinstance(key, str):
+            warnings.add(f'ignored unrecognized field "{field_path}"')
+            continue
+        if lookup.get(key.lower()) is None:
+            warnings.add(f'ignored unrecognized field "{field_path}"')
+        else:
+            warnings.add(f'ignored duplicate field "{field_path}"')
+
+
+def _field_path(path: str, key: Any) -> str:
+    rendered_key = str(key)
+    return f"{path}.{rendered_key}" if path else rendered_key
 
 
 def _looks_like_model(model: type[BaseModel], data: Mapping[Any, Any]) -> bool:

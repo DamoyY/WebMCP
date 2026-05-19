@@ -45,6 +45,17 @@ def test_normalize_tool_arguments_accepts_search_aliases() -> None:
     )
 
 
+def test_normalize_tool_arguments_ignores_unrecognized_request_fields() -> None:
+    result = normalize_tool_arguments(
+        SearchQueryArguments,
+        {"requests": [{"q": "OpenAI", "num_results": 5}], "debug": True},
+    )
+    assert result.requests == [{"q": "OpenAI"}]
+    assert result.warning is not None
+    assert 'ignored unrecognized field "requests[0].num_results"' in result.warning
+    assert 'ignored unrecognized field "debug"' in result.warning
+
+
 def test_normalize_tool_arguments_does_not_warn_for_canonical_input() -> None:
     result = normalize_tool_arguments(
         OpenArguments, {"requests": [{"url": "https://example.com", "chunk": 1}]}
