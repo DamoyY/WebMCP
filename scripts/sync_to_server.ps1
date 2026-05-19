@@ -43,7 +43,7 @@ trap cleanup EXIT
 
 tar -xzf /tmp/web-mcp.tar.gz -C "$STAGING"
 test -f "$STAGING/requirements.txt"
-test -f "$STAGING/config/production.yaml"
+test -f "$STAGING/config/default.yaml"
 
 if [ -d "$REMOTE_DIR/.venv" ]; then
     mv "$REMOTE_DIR/.venv" "$STAGING/.venv"
