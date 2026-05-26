@@ -8,11 +8,7 @@ from mcp.server.fastmcp import Context, FastMCP
 from pydantic import BaseModel, ConfigDict, model_validator
 from chunking import TokenChunker
 from config import AppConfig, FindConfig
-from errors import (
-    ClientFacingError,
-    to_tool_exception,
-    validate_request_arguments,
-)
+from errors import ClientFacingError, to_tool_exception, validate_request_arguments
 from exa_client import ExaSearchClient
 from headers import exa_api_key, optional_header
 from input_normalization import normalize_tool_arguments
@@ -22,11 +18,11 @@ from models import (
     FindPage,
     FindResponse,
     OpenArguments,
-    OpenPage,
     OpenResponse,
     SearchQueryArguments,
     SearchQueryResponse,
 )
+from open_chunks import normalize_open_chunk_requests, open_page_chunk
 from page_fetcher import PageContent, PageFetcher
 
 
@@ -54,22 +50,19 @@ def register_tools(mcp: FastMCP, config: AppConfig) -> None:
     ) -> OpenResponse:
         """用于读取页面内容。"""
         try:
-            arguments = validate_request_arguments(OpenArguments, requests)
+            warnings = list(warning or [])
+            normalized_requests = normalize_open_chunk_requests(requests, warnings)
+            arguments = validate_request_arguments(OpenArguments, normalized_requests)
             jina_key = optional_header(ctx, config.headers.jina_api_key)
             pages = await _fetch_pages(page_fetcher, arguments.requests, jina_key)
             opened = []
-            for request, page in zip(arguments.requests, pages, strict=True):
-                chunk, total_chunks, _token_count = chunker.select(
-                    page.markdown, request.chunk
-                )
+            for index, (request, page) in enumerate(
+                zip(arguments.requests, pages, strict=True)
+            ):
                 opened.append(
-                    OpenPage(
-                        chunk=chunk.index,
-                        total_chunks=total_chunks,
-                        content=chunk.content,
-                    )
+                    open_page_chunk(page, request.chunk, index, chunker, warnings)
                 )
-            return OpenResponse(pages=opened, warning=warning)
+            return OpenResponse(pages=opened, warning=warnings or None)
         except Exception as error:
             raise to_tool_exception("open", error) from None
 

@@ -14,6 +14,13 @@ SearchCategory = Literal[
 ]
 
 
+def _validate_http_url(value: str) -> str:
+    parsed = urlparse(value)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        raise ValueError("must be an absolute HTTP or HTTPS URL")
+    return value
+
+
 class SearchQueryRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     q: str = Field(min_length=1)
@@ -44,15 +51,12 @@ class SearchQueryArguments(BaseModel):
 class OpenRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     url: str
-    chunk: int = Field(default=1, ge=1)
+    chunk: int = Field(ge=1)
 
     @field_validator("url")
     @classmethod
     def validate_url(cls, value: str) -> str:
-        parsed = urlparse(value)
-        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
-            raise ValueError("must be an absolute HTTP or HTTPS URL")
-        return value
+        return _validate_http_url(value)
 
 
 class OpenPage(BaseModel):
@@ -82,7 +86,7 @@ class FindRequest(BaseModel):
     @field_validator("url")
     @classmethod
     def validate_url(cls, value: str) -> str:
-        return OpenRequest(url=value).url
+        return _validate_http_url(value)
 
 
 class FindMatch(BaseModel):
