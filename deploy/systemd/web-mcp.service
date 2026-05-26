@@ -9,7 +9,7 @@ WorkingDirectory=/opt/web-mcp
 Environment=WEB_MCP_CONFIG=/opt/web-mcp/config/default.yaml
 Environment=PYTHONPATH=/opt/web-mcp/src
 Environment=PYTHONUNBUFFERED=1
-ExecStart=/opt/web-mcp/.venv/bin/python -m web_mcp.server
+ExecStart=/opt/web-mcp/.venv/bin/python -m server
 Restart=on-failure
 RestartSec=5
 NoNewPrivileges=true
