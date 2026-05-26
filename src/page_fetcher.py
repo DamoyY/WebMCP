@@ -1,10 +1,10 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
-from web_mcp.config import AppConfig
-from web_mcp.direct_fetch import fetch_direct_text, resolve_direct_fetch_target
-from web_mcp.errors import ClientFacingError
-from web_mcp.jina_client import JinaReaderClient
+from config import AppConfig
+from direct_fetch import fetch_direct_text, resolve_direct_fetch_target
+from errors import ClientFacingError
+from jina_client import JinaReaderClient
 
 
 @dataclass(frozen=True)

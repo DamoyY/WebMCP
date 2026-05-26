@@ -3,8 +3,8 @@ from dataclasses import dataclass
 from pathlib import PurePosixPath
 from urllib.parse import parse_qs, urlencode, unquote, urlparse
 import httpx
-from web_mcp.config import DirectFetchConfig, HttpConfig
-from web_mcp.errors import ClientFacingError, http_service_error, upstream_timeout
+from config import DirectFetchConfig, HttpConfig
+from errors import ClientFacingError, http_service_error, upstream_timeout
 
 
 @dataclass(frozen=True)

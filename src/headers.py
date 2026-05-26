@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Any
-from web_mcp.config import HeaderConfig
-from web_mcp.errors import ClientFacingError
+from config import HeaderConfig
+from errors import ClientFacingError
 
 
 def require_header(context: Any, header_name: str) -> str:

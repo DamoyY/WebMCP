@@ -5,9 +5,9 @@ from typing import Any
 from urllib.parse import urlparse
 import httpx
 from exa_py import AsyncExa
-from web_mcp.config import SearchConfig
-from web_mcp.errors import ClientFacingError, http_service_error, upstream_timeout
-from web_mcp.models import SearchQueryRequest, SearchResult
+from config import SearchConfig
+from errors import ClientFacingError, http_service_error, upstream_timeout
+from models import SearchQueryRequest, SearchResult
 
 
 class ExaSearchClient:

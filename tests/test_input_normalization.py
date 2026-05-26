@@ -1,6 +1,6 @@
 from __future__ import annotations
-from web_mcp.input_normalization import normalize_tool_arguments
-from web_mcp.models import OpenArguments, OpenResponse, SearchQueryArguments
+from input_normalization import normalize_tool_arguments
+from models import OpenArguments, OpenResponse, SearchQueryArguments
 
 
 def test_normalize_tool_arguments_accepts_direct_open_object() -> None:

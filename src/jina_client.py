@@ -1,8 +1,8 @@
 from __future__ import annotations
 from typing import Any
 import httpx
-from web_mcp.config import HttpConfig, JinaConfig
-from web_mcp.errors import ClientFacingError, http_service_error, upstream_timeout
+from config import HttpConfig, JinaConfig
+from errors import ClientFacingError, http_service_error, upstream_timeout
 
 
 class JinaReaderClient:

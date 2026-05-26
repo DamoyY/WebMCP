@@ -4,7 +4,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 from pydantic import BaseModel
-from web_mcp.input_aliases import (
+from input_aliases import (
     field_lookup,
     field_path,
     list_item_type,

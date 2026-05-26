@@ -1,8 +1,8 @@
 from __future__ import annotations
 import pytest
 from pydantic import ValidationError
-from web_mcp.exa_client import _normalize_domains
-from web_mcp.models import SearchQueryRequest
+from exa_client import _normalize_domains
+from models import SearchQueryRequest
 
 
 def test_normalize_domains_accepts_list() -> None:

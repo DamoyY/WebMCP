@@ -1,6 +1,6 @@
 from __future__ import annotations
-from web_mcp.config import DirectFetchConfig
-from web_mcp.direct_fetch import resolve_direct_fetch_target
+from config import DirectFetchConfig
+from direct_fetch import resolve_direct_fetch_target
 
 
 def _config() -> DirectFetchConfig:
