@@ -49,11 +49,24 @@ class HttpConfig(BaseModel):
     direct_fetch_timeout_seconds: float = Field(gt=0)
 
 
+class JinaViewportConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    width: PositiveInt
+    height: PositiveInt
+
+
 class JinaConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
     endpoint: str
+    accept: str
     return_format: str
     engine: str
+    locale: str
+    no_cache: bool
+    respond_with: str
+    retain_images: str
+    with_shadow_dom: bool
+    viewport: JinaViewportConfig
 
 
 class ChunkingConfig(BaseModel):

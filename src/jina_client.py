@@ -13,17 +13,23 @@ class JinaReaderClient:
     async def read_markdown(self, url: str, api_key: str) -> str:
         headers = {
             "Authorization": f"Bearer {api_key}",
-            "Accept": "application/json",
+            "Accept": self._jina_config.accept,
             "Content-Type": "application/json",
-            "X-Return-Format": self._jina_config.return_format,
             "X-Engine": self._jina_config.engine,
+            "X-Locale": self._jina_config.locale,
+            "X-No-Cache": _header_bool(self._jina_config.no_cache),
+            "X-Respond-With": self._jina_config.respond_with,
+            "X-Retain-Images": self._jina_config.retain_images,
+            "X-Return-Format": self._jina_config.return_format,
+            "X-With-Shadow-Dom": _header_bool(self._jina_config.with_shadow_dom),
         }
+        payload = {"url": url, "viewport": self._jina_config.viewport.model_dump()}
         try:
             async with httpx.AsyncClient(
                 timeout=self._timeout, follow_redirects=True
             ) as client:
                 response = await client.post(
-                    self._jina_config.endpoint, headers=headers, json={"url": url}
+                    self._jina_config.endpoint, headers=headers, json=payload
                 )
         except httpx.TimeoutException as error:
             raise upstream_timeout("Jina") from error
@@ -57,3 +63,7 @@ def _extract_content(response: httpx.Response) -> str:
     raise ClientFacingError(
         "Jina returned an unsupported response. Retry later or try another URL."
     )
+
+
+def _header_bool(value: bool) -> str:
+    return "true" if value else "false"
