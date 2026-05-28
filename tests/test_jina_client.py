@@ -12,6 +12,17 @@ def test_extract_content_from_jina_data_payload() -> None:
     assert _extract_content(response) == "# Title\nBody"
 
 
+def test_extract_content_from_jina_event_stream_payloads() -> None:
+    response = httpx.Response(
+        200,
+        headers={"Content-Type": "text/event-stream"},
+        text='data: {"data": {"content": "# Title\\n"}}\n\n'
+        'data: {"content": "Body"}\n\n'
+        "data: [DONE]\n\n",
+    )
+    assert _extract_content(response) == "# Title\nBody"
+
+
 @pytest.mark.asyncio
 async def test_read_markdown_sends_reader_request_headers_and_viewport() -> None:
     client = JinaReaderClient(_jina_config(), _http_config())

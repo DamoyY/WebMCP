@@ -1,4 +1,5 @@
 from __future__ import annotations
+import json
 from typing import Any
 import httpx
 from config import HttpConfig, JinaConfig
@@ -43,10 +44,22 @@ class JinaReaderClient:
 
 
 def _extract_content(response: httpx.Response) -> str:
+    content_type = response.headers.get("content-type", "").split(";")[0].lower()
+    if content_type == "text/event-stream":
+        return _extract_event_stream_content(response.text)
     try:
         payload: Any = response.json()
     except ValueError:
         return response.text
+    content = _extract_payload_content(payload)
+    if content is not None:
+        return content
+    raise ClientFacingError(
+        "Jina returned an unsupported response. Retry later or try another URL."
+    )
+
+
+def _extract_payload_content(payload: Any) -> str | None:
     if isinstance(payload, dict):
         data = payload.get("data", payload)
         if isinstance(data, dict):
@@ -54,15 +67,48 @@ def _extract_content(response: httpx.Response) -> str:
                 value = data.get(key)
                 if isinstance(value, str):
                     return value
+        if isinstance(data, str):
+            return data
         for key in ("content", "markdown", "text"):
             value = payload.get(key)
             if isinstance(value, str):
                 return value
     if isinstance(payload, str):
         return payload
-    raise ClientFacingError(
-        "Jina returned an unsupported response. Retry later or try another URL."
-    )
+    return None
+
+
+def _extract_event_stream_content(text: str) -> str:
+    chunks: list[str] = []
+    event_lines: list[str] = []
+    for line in text.splitlines():
+        if line == "":
+            _append_event_stream_chunk(chunks, event_lines)
+            event_lines = []
+            continue
+        if line.startswith("data:"):
+            data = line[5:]
+            event_lines.append(data[1:] if data.startswith(" ") else data)
+    _append_event_stream_chunk(chunks, event_lines)
+    if chunks:
+        return "".join(chunks)
+    return text
+
+
+def _append_event_stream_chunk(chunks: list[str], event_lines: list[str]) -> None:
+    if not event_lines:
+        return
+    data = "\n".join(event_lines)
+    if data == "[DONE]":
+        return
+    try:
+        payload: Any = json.loads(data)
+    except ValueError:
+        chunks.append(data)
+        return
+    content = _extract_payload_content(payload)
+    if content is not None:
+        chunks.append(content)
 
 
 def _header_bool(value: bool) -> str:
