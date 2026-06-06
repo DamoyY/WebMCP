@@ -38,9 +38,7 @@ class SearchConfig(BaseModel):
     num_results: PositiveInt
     type: str
     highlights_max_characters: PositiveInt
-    max_age_hours: int
-    min_recency_days: PositiveInt
-    max_recency_days: PositiveInt
+    max_age_hours: int = 24
 
 
 class HttpConfig(BaseModel):

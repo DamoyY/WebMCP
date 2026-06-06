@@ -50,10 +50,7 @@ class ExaSearchClient:
     def _start_published_date(self, recency: int | None) -> str | None:
         if recency is None:
             return None
-        days = min(
-            max(recency, self._config.min_recency_days), self._config.max_recency_days
-        )
-        return (datetime.now(UTC) - timedelta(days=days)).date().isoformat()
+        return (datetime.now(UTC) - timedelta(days=recency)).date().isoformat()
 
 
 def _normalize_domains(domains: list[str] | None) -> list[str] | None:
