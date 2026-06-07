@@ -7,7 +7,9 @@ from errors import ClientFacingError, http_service_error, upstream_timeout
 
 
 class JinaReaderClient:
-    def __init__(self, jina_config: JinaConfig, http_config: HttpConfig) -> None:
+    def __init__(
+        self, jina_config: JinaConfig, http_config: HttpConfig
+    ) -> None:
         self._jina_config = jina_config
         self._timeout = httpx.Timeout(http_config.timeout_seconds)
 
@@ -22,9 +24,14 @@ class JinaReaderClient:
             "X-Respond-With": self._jina_config.respond_with,
             "X-Retain-Images": self._jina_config.retain_images,
             "X-Return-Format": self._jina_config.return_format,
-            "X-With-Shadow-Dom": _header_bool(self._jina_config.with_shadow_dom),
+            "X-With-Shadow-Dom": _header_bool(
+                self._jina_config.with_shadow_dom
+            ),
         }
-        payload = {"url": url, "viewport": self._jina_config.viewport.model_dump()}
+        payload = {
+            "url": url,
+            "viewport": self._jina_config.viewport.model_dump(),
+        }
         try:
             async with httpx.AsyncClient(
                 timeout=self._timeout, follow_redirects=True
@@ -44,7 +51,9 @@ class JinaReaderClient:
 
 
 def _extract_content(response: httpx.Response) -> str:
-    content_type = response.headers.get("content-type", "").split(";")[0].lower()
+    content_type = (
+        response.headers.get("content-type", "").split(";")[0].lower()
+    )
     if content_type == "text/event-stream":
         return _extract_event_stream_content(response.text)
     try:
@@ -79,36 +88,38 @@ def _extract_payload_content(payload: Any) -> str | None:
 
 
 def _extract_event_stream_content(text: str) -> str:
-    chunks: list[str] = []
+    latest_content: str | None = None
     event_lines: list[str] = []
     for line in text.splitlines():
         if line == "":
-            _append_event_stream_chunk(chunks, event_lines)
+            latest_content = _event_stream_content(latest_content, event_lines)
             event_lines = []
             continue
         if line.startswith("data:"):
             data = line[5:]
             event_lines.append(data[1:] if data.startswith(" ") else data)
-    _append_event_stream_chunk(chunks, event_lines)
-    if chunks:
-        return "".join(chunks)
+    latest_content = _event_stream_content(latest_content, event_lines)
+    if latest_content is not None:
+        return latest_content
     return text
 
 
-def _append_event_stream_chunk(chunks: list[str], event_lines: list[str]) -> None:
+def _event_stream_content(
+    latest_content: str | None, event_lines: list[str]
+) -> str | None:
     if not event_lines:
-        return
+        return latest_content
     data = "\n".join(event_lines)
     if data == "[DONE]":
-        return
+        return latest_content
     try:
         payload: Any = json.loads(data)
     except ValueError:
-        chunks.append(data)
-        return
+        return data
     content = _extract_payload_content(payload)
     if content is not None:
-        chunks.append(content)
+        return content
+    return latest_content
 
 
 def _header_bool(value: bool) -> str:
