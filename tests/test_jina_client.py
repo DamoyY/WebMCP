@@ -25,17 +25,13 @@ def test_extract_content_from_jina_event_stream_uses_latest_snapshot() -> None:
 
 
 @pytest.mark.asyncio
-async def test_read_markdown_sends_reader_request_headers_and_viewport() -> (
-    None
-):
+async def test_read_markdown_sends_reader_request_headers_and_viewport() -> None:
     client = JinaReaderClient(_jina_config(), _http_config())
     with respx.mock(assert_all_called=True) as router:
         route = router.post("https://r.jina.ai/").mock(
             return_value=httpx.Response(200, text="# Title")
         )
-        markdown = await client.read_markdown(
-            "https://www.example.com", "secret"
-        )
+        markdown = await client.read_markdown("https://www.example.com", "secret")
     request = route.calls[0].request
     assert markdown == "# Title"
     assert request.headers["Authorization"] == "Bearer secret"

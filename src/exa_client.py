@@ -39,6 +39,7 @@ class ExaSearchClient:
                         "max_characters": self._config.highlights_max_characters,
                     },
                     "max_age_hours": self._config.max_age_hours,
+                    "livecrawl_timeout": self._config.livecrawl_timeout,
                 },
             )
         except httpx.TimeoutException as error:

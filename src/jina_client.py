@@ -7,9 +7,7 @@ from errors import ClientFacingError, http_service_error, upstream_timeout
 
 
 class JinaReaderClient:
-    def __init__(
-        self, jina_config: JinaConfig, http_config: HttpConfig
-    ) -> None:
+    def __init__(self, jina_config: JinaConfig, http_config: HttpConfig) -> None:
         self._jina_config = jina_config
         self._timeout = httpx.Timeout(http_config.timeout_seconds)
 
@@ -24,14 +22,9 @@ class JinaReaderClient:
             "X-Respond-With": self._jina_config.respond_with,
             "X-Retain-Images": self._jina_config.retain_images,
             "X-Return-Format": self._jina_config.return_format,
-            "X-With-Shadow-Dom": _header_bool(
-                self._jina_config.with_shadow_dom
-            ),
+            "X-With-Shadow-Dom": _header_bool(self._jina_config.with_shadow_dom),
         }
-        payload = {
-            "url": url,
-            "viewport": self._jina_config.viewport.model_dump(),
-        }
+        payload = {"url": url, "viewport": self._jina_config.viewport.model_dump()}
         try:
             async with httpx.AsyncClient(
                 timeout=self._timeout, follow_redirects=True
@@ -51,9 +44,7 @@ class JinaReaderClient:
 
 
 def _extract_content(response: httpx.Response) -> str:
-    content_type = (
-        response.headers.get("content-type", "").split(";")[0].lower()
-    )
+    content_type = response.headers.get("content-type", "").split(";")[0].lower()
     if content_type == "text/event-stream":
         return _extract_event_stream_content(response.text)
     try:

@@ -39,6 +39,7 @@ class SearchConfig(BaseModel):
     type: str
     highlights_max_characters: PositiveInt
     max_age_hours: int = 24
+    livecrawl_timeout: PositiveInt = 30000
 
 
 class HttpConfig(BaseModel):
