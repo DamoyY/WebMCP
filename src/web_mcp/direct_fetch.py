@@ -10,13 +10,18 @@ from . import __version__
 from .config import DirectFetchConfig, HttpConfig
 from .errors import ClientFacingError, http_service_error, upstream_timeout
 from .mediawiki import extract_mediawiki_content, resolve_mediawiki_api_url
+from .package_registry import (
+    format_package_registry_json,
+    resolve_package_registry_target,
+)
 
 
 @dataclass(frozen=True)
 class DirectFetchTarget:
     original_url: str
     request_url: str
-    response_format: Literal["text", "mediawiki_api"] = "text"
+    response_format: Literal["text", "mediawiki_api", "package_registry_json"] = "text"
+    json_fields_last: tuple[str, ...] = ()
     fallback_to_jina_on_error: bool = False
 
 
@@ -25,7 +30,8 @@ def resolve_direct_fetch_target(
 ) -> DirectFetchTarget | None:
     parsed = urlparse(url)
     host = parsed.netloc.lower()
-    response_format: Literal["text", "mediawiki_api"] = "text"
+    response_format: Literal["text", "mediawiki_api", "package_registry_json"] = "text"
+    json_fields_last: tuple[str, ...] = ()
     fallback_to_jina_on_error = False
     if (parsed.hostname or "").lower() == "learn.microsoft.com":
         request_url = _microsoft_learn_markdown_url(url)
@@ -38,6 +44,10 @@ def resolve_direct_fetch_target(
         request_url = _gitlab_raw_url(url, host, config)
     elif host in config.bitbucket_hosts:
         request_url = _bitbucket_raw_url(url, host, config)
+    elif package_registry_target := resolve_package_registry_target(url):
+        request_url = package_registry_target.request_url
+        response_format = "package_registry_json"
+        json_fields_last = package_registry_target.json_fields_last
     elif mediawiki_url := resolve_mediawiki_api_url(url):
         request_url = mediawiki_url
         response_format = "mediawiki_api"
@@ -49,6 +59,7 @@ def resolve_direct_fetch_target(
         original_url=url,
         request_url=request_url,
         response_format=response_format,
+        json_fields_last=json_fields_last,
         fallback_to_jina_on_error=fallback_to_jina_on_error,
     )
 
@@ -59,7 +70,7 @@ async def fetch_direct_text(
     headers = {
         "Accept": (
             "application/json"
-            if target.response_format == "mediawiki_api"
+            if target.response_format in {"mediawiki_api", "package_registry_json"}
             else "text/plain,*/*"
         ),
         "Range": f"bytes=0-{direct_config.max_bytes}",
@@ -82,12 +93,19 @@ async def fetch_direct_text(
         raise ClientFacingError(
             f"Direct content is larger than the allowed {direct_config.max_bytes} bytes."
         )
-    if target.response_format == "mediawiki_api":
+    if target.response_format in {"mediawiki_api", "package_registry_json"}:
         try:
             payload = json.loads(content)
         except (json.JSONDecodeError, UnicodeDecodeError) as error:
-            raise ClientFacingError("MediaWiki API returned malformed JSON.") from error
-        return extract_mediawiki_content(payload)
+            service = (
+                "MediaWiki API"
+                if target.response_format == "mediawiki_api"
+                else "Package registry"
+            )
+            raise ClientFacingError(f"{service} returned malformed JSON.") from error
+        if target.response_format == "mediawiki_api":
+            return extract_mediawiki_content(payload)
+        return format_package_registry_json(payload, target.json_fields_last)
     return content.decode(response.encoding or "utf-8", errors="replace")
 
 
