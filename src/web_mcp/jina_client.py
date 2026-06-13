@@ -24,7 +24,10 @@ class JinaReaderClient:
             "X-Return-Format": self._jina_config.return_format,
             "X-With-Shadow-Dom": _header_bool(self._jina_config.with_shadow_dom),
         }
-        payload = {"url": url, "viewport": self._jina_config.viewport.model_dump()}
+        payload = {
+            "url": _rewrite_arxiv_pdf_url(url),
+            "viewport": self._jina_config.viewport.model_dump(),
+        }
         try:
             async with httpx.AsyncClient(
                 timeout=self._timeout, follow_redirects=True
@@ -115,3 +118,11 @@ def _event_stream_content(
 
 def _header_bool(value: bool) -> str:
     return "true" if value else "false"
+
+
+def _rewrite_arxiv_pdf_url(url: str) -> str:
+    pdf_prefix = "https://arxiv.org/pdf/"
+    html_prefix = "https://arxiv.org/html/"
+    if url.startswith(pdf_prefix):
+        return f"{html_prefix}{url.removeprefix(pdf_prefix)}"
+    return url

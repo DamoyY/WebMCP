@@ -26,7 +26,7 @@ def test_github_blob_text_file_resolves_to_raw_url() -> None:
     )
     assert target is not None
     assert (
-        target.raw_url
+        target.request_url
         == "https://raw.githubusercontent.com/modelcontextprotocol/python-sdk/main/README.md"
     )
 
@@ -44,7 +44,7 @@ def test_huggingface_blob_text_file_resolves_to_raw_url() -> None:
     )
     assert target is not None
     assert (
-        target.raw_url
+        target.request_url
         == "https://huggingface.co/openai/whisper-tiny/resolve/main/README.md"
     )
 
@@ -54,7 +54,7 @@ def test_huggingface_root_model_text_file_resolves_to_raw_url() -> None:
         "https://huggingface.co/gpt2/blob/main/README.md", _config()
     )
     assert target is not None
-    assert target.raw_url == "https://huggingface.co/gpt2/resolve/main/README.md"
+    assert target.request_url == "https://huggingface.co/gpt2/resolve/main/README.md"
 
 
 def test_huggingface_non_text_file_is_not_direct_fetched() -> None:
@@ -65,25 +65,26 @@ def test_huggingface_non_text_file_is_not_direct_fetched() -> None:
     assert target is None
 
 
-def test_wikipedia_page_resolves_to_raw_wikitext_url() -> None:
+def test_wikipedia_page_resolves_to_mediawiki_api_url() -> None:
     target = resolve_direct_fetch_target(
         "https://en.wikipedia.org/wiki/Pet_door", _config()
     )
     assert target is not None
     assert (
-        target.raw_url
-        == "https://en.wikipedia.org/w/index.php?title=Pet_door&action=raw"
+        target.request_url
+        == "https://en.wikipedia.org/w/api.php?action=query&prop=revisions&rvprop=content&rvslots=main&titles=Pet_door&redirects=1&format=json&formatversion=2"
     )
+    assert target.response_format == "mediawiki_api"
 
 
-def test_wikipedia_non_ascii_page_title_is_encoded_for_raw_url() -> None:
+def test_wikipedia_non_ascii_page_title_is_encoded_for_api_url() -> None:
     target = resolve_direct_fetch_target(
         "https://zh.wikipedia.org/wiki/北京", _config()
     )
     assert target is not None
     assert (
-        target.raw_url
-        == "https://zh.wikipedia.org/w/index.php?title=%E5%8C%97%E4%BA%AC&action=raw"
+        target.request_url
+        == "https://zh.wikipedia.org/w/api.php?action=query&prop=revisions&rvprop=content&rvslots=main&titles=%E5%8C%97%E4%BA%AC&redirects=1&format=json&formatversion=2"
     )
 
 
@@ -93,7 +94,7 @@ def test_microsoft_learn_page_resolves_to_markdown_url_with_jina_fallback() -> N
     )
     assert target is not None
     assert (
-        target.raw_url
+        target.request_url
         == "https://learn.microsoft.com/en-us/azure/architecture/guide/?accept=text%2Fmarkdown"
     )
     assert target.fallback_to_jina_on_error is True
@@ -106,7 +107,7 @@ def test_microsoft_learn_markdown_url_preserves_other_query_parameters() -> None
     )
     assert target is not None
     assert (
-        target.raw_url
+        target.request_url
         == "https://learn.microsoft.com/en-us/dotnet/?view=net-10.0&accept=text%2Fmarkdown"
     )
 

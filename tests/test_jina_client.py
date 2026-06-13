@@ -50,6 +50,22 @@ async def test_read_markdown_sends_reader_request_headers_and_viewport() -> None
     }
 
 
+@pytest.mark.asyncio
+async def test_read_markdown_rewrites_arxiv_pdf_url_to_html() -> None:
+    client = JinaReaderClient(_jina_config(), _http_config())
+    with respx.mock(assert_all_called=True) as router:
+        route = router.post("https://r.jina.ai/").mock(
+            return_value=httpx.Response(200, text="# Paper")
+        )
+        await client.read_markdown(
+            "https://arxiv.org/pdf/2501.12345?download=1", "secret"
+        )
+    request = route.calls[0].request
+    assert json.loads(request.content)["url"] == (
+        "https://arxiv.org/html/2501.12345?download=1"
+    )
+
+
 def _jina_config() -> JinaConfig:
     return JinaConfig(
         endpoint="https://r.jina.ai/",

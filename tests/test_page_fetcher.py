@@ -27,7 +27,7 @@ async def test_microsoft_learn_uses_direct_markdown_request(
     await_args = direct_fetch.await_args
     assert await_args is not None
     target = await_args.args[0]
-    assert target.raw_url == (
+    assert target.request_url == (
         "https://learn.microsoft.com/en-us/dotnet/?accept=text%2Fmarkdown"
     )
     assert content.source == "direct"
