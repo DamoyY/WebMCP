@@ -1,6 +1,6 @@
 from __future__ import annotations
-from chunking import TokenChunker
-from config import ChunkingConfig
+from web_mcp.chunking import TokenChunker
+from web_mcp.config import ChunkingConfig
 
 
 def test_split_uses_overlap() -> None:

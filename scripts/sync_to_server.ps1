@@ -42,16 +42,19 @@ cleanup() {
 trap cleanup EXIT
 
 tar -xzf /tmp/web-mcp.tar.gz -C "$STAGING"
-test -f "$STAGING/requirements.txt"
+test -f "$STAGING/pyproject.toml"
+test -f "$STAGING/uv.lock"
 test -f "$STAGING/config/default.yaml"
+command -v uv >/dev/null 2>&1 || {
+    echo "uv is required on the remote server" >&2
+    exit 1
+}
 
 if [ -d "$REMOTE_DIR/.venv" ]; then
     mv "$REMOTE_DIR/.venv" "$STAGING/.venv"
-else
-    python3 -m venv "$STAGING/.venv"
 fi
 
-"$STAGING/.venv/bin/python" -m pip install --no-cache-dir -r "$STAGING/requirements.txt"
+uv sync --project "$STAGING" --frozen --no-dev --no-editable
 
 rm -rf "${REMOTE_DIR}.previous"
 if [ -d "$REMOTE_DIR" ]; then

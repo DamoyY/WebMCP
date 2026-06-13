@@ -1,9 +1,9 @@
 from __future__ import annotations
-from chunking import TokenChunker
-from config import ChunkingConfig
-from models import OpenArguments
-from open_chunks import normalize_open_chunk_requests, open_page_chunk
-from page_fetcher import PageContent
+from web_mcp.chunking import TokenChunker
+from web_mcp.config import ChunkingConfig
+from web_mcp.models import OpenArguments
+from web_mcp.open_chunks import normalize_open_chunk_requests, open_page_chunk
+from web_mcp.page_fetcher import PageContent
 
 
 def test_open_chunk_is_required_in_schema() -> None:

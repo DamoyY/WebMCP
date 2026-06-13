@@ -1,16 +1,17 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import PurePosixPath
-from urllib.parse import parse_qs, urlencode, unquote, urlparse
+from urllib.parse import parse_qs, parse_qsl, urlencode, unquote, urlparse
 import httpx
-from config import DirectFetchConfig, HttpConfig
-from errors import ClientFacingError, http_service_error, upstream_timeout
+from .config import DirectFetchConfig, HttpConfig
+from .errors import ClientFacingError, http_service_error, upstream_timeout
 
 
 @dataclass(frozen=True)
 class DirectFetchTarget:
     original_url: str
     raw_url: str
+    fallback_to_jina_on_error: bool = False
 
 
 def resolve_direct_fetch_target(
@@ -18,7 +19,11 @@ def resolve_direct_fetch_target(
 ) -> DirectFetchTarget | None:
     parsed = urlparse(url)
     host = parsed.netloc.lower()
-    if host in config.github_hosts:
+    fallback_to_jina_on_error = False
+    if (parsed.hostname or "").lower() == "learn.microsoft.com":
+        raw_url = _microsoft_learn_markdown_url(url)
+        fallback_to_jina_on_error = True
+    elif host in config.github_hosts:
         raw_url = _github_raw_url(url, host, config)
     elif host in config.huggingface_hosts:
         raw_url = _huggingface_raw_url(url, host, config)
@@ -32,7 +37,11 @@ def resolve_direct_fetch_target(
         raw_url = None
     if raw_url is None:
         return None
-    return DirectFetchTarget(original_url=url, raw_url=raw_url)
+    return DirectFetchTarget(
+        original_url=url,
+        raw_url=raw_url,
+        fallback_to_jina_on_error=fallback_to_jina_on_error,
+    )
 
 
 async def fetch_direct_text(
@@ -125,6 +134,17 @@ def _bitbucket_raw_url(url: str, host: str, config: DirectFetchConfig) -> str | 
 
 def _is_wikipedia_host(host: str) -> bool:
     return host == "wikipedia.org" or host.endswith(".wikipedia.org")
+
+
+def _microsoft_learn_markdown_url(url: str) -> str:
+    parsed = urlparse(url)
+    query = [
+        (name, value)
+        for name, value in parse_qsl(parsed.query, keep_blank_values=True)
+        if name.lower() != "accept"
+    ]
+    query.append(("accept", "text/markdown"))
+    return parsed._replace(query=urlencode(query)).geturl()
 
 
 def _wikipedia_raw_url(url: str, host: str) -> str | None:

@@ -1,8 +1,8 @@
 from __future__ import annotations
 import pytest
 from pydantic import BaseModel
-from errors import ClientFacingError, validate_request_arguments
-from models import FindArguments, OpenArguments, SearchQueryArguments
+from web_mcp.errors import ClientFacingError, validate_request_arguments
+from web_mcp.models import FindArguments, OpenArguments, SearchQueryArguments
 
 
 def test_validation_error_for_domains_string_is_safe_and_actionable() -> None:

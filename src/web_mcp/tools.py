@@ -6,13 +6,13 @@ from typing import Any, ClassVar
 from mcp.server.fastmcp.utilities.func_metadata import ArgModelBase
 from mcp.server.fastmcp import Context, FastMCP
 from pydantic import BaseModel, ConfigDict, model_validator
-from chunking import TokenChunker
-from config import AppConfig, FindConfig
-from errors import ClientFacingError, to_tool_exception, validate_request_arguments
-from exa_client import ExaSearchClient
-from headers import exa_api_key, optional_header
-from input_normalization import normalize_tool_arguments
-from models import (
+from .chunking import TokenChunker
+from .config import AppConfig, FindConfig
+from .errors import ClientFacingError, to_tool_exception, validate_request_arguments
+from .exa_client import ExaSearchClient
+from .headers import exa_api_key, optional_header
+from .input_normalization import normalize_tool_arguments
+from .models import (
     FindArguments,
     FindMatch,
     FindPage,
@@ -22,8 +22,8 @@ from models import (
     SearchQueryArguments,
     SearchQueryResponse,
 )
-from open_chunks import normalize_open_chunk_requests, open_page_chunk
-from page_fetcher import PageContent, PageFetcher
+from .open_chunks import normalize_open_chunk_requests, open_page_chunk
+from .page_fetcher import PageContent, PageFetcher
 
 
 def register_tools(mcp: FastMCP, config: AppConfig) -> None:

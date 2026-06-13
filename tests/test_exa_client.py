@@ -4,10 +4,10 @@ from typing import Any, cast
 import pytest
 from exa_py import AsyncExa
 from pydantic import ValidationError
-import exa_client
-from config import SearchConfig
-from exa_client import ExaSearchClient, _normalize_domains
-from models import SearchQueryRequest
+from web_mcp import exa_client
+from web_mcp.config import SearchConfig
+from web_mcp.exa_client import ExaSearchClient, _normalize_domains
+from web_mcp.models import SearchQueryRequest
 
 
 def test_normalize_domains_accepts_list() -> None:

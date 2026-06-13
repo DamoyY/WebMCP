@@ -1,7 +1,0 @@
-exa-py==2.13.0
-httpx==0.28.1
-mcp==1.27.1
-pydantic==2.13.4
-PyYAML==6.0.3
-tiktoken==0.13.0
-uvicorn==0.47.0

@@ -3,8 +3,8 @@ import json
 import httpx
 import pytest
 import respx
-from config import HttpConfig, JinaConfig, JinaViewportConfig
-from jina_client import JinaReaderClient, _extract_content
+from web_mcp.config import HttpConfig, JinaConfig, JinaViewportConfig
+from web_mcp.jina_client import JinaReaderClient, _extract_content
 
 
 def test_extract_content_from_jina_data_payload() -> None:

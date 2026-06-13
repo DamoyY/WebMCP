@@ -2,8 +2,8 @@ from __future__ import annotations
 import json
 from typing import Any
 import httpx
-from config import HttpConfig, JinaConfig
-from errors import ClientFacingError, http_service_error, upstream_timeout
+from .config import HttpConfig, JinaConfig
+from .errors import ClientFacingError, http_service_error, upstream_timeout
 
 
 class JinaReaderClient:

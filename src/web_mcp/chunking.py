@@ -1,8 +1,8 @@
 from __future__ import annotations
 from dataclasses import dataclass
 import tiktoken
-from config import ChunkingConfig
-from errors import ClientFacingError
+from .config import ChunkingConfig
+from .errors import ClientFacingError
 
 
 @dataclass(frozen=True)

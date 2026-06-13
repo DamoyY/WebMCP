@@ -2,8 +2,8 @@ from __future__ import annotations
 from mcp.server.fastmcp import FastMCP
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
-from config import AppConfig, load_config
-from tools import register_tools
+from .config import AppConfig, load_config
+from .tools import register_tools
 
 
 def create_mcp(config: AppConfig | None = None) -> FastMCP:

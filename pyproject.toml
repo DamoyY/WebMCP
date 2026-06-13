@@ -3,7 +3,7 @@ name = "web-mcp"
 version = "0.1.0"
 description = "Streamable HTTP MCP service for Exa search and Jina page reading"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 dependencies = [
     "exa-py",
     "httpx",
@@ -30,6 +30,9 @@ packages = ["src/web_mcp"]
 
 [tool.ruff]
 src = ["src", "tests", "scripts"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
 
 [tool.pyright]
 include = ["src", "tests", "scripts"]

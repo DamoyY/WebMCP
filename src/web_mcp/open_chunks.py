@@ -1,9 +1,9 @@
 from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
-from chunking import TokenChunker
-from models import OpenPage
-from page_fetcher import PageContent
+from .chunking import TokenChunker
+from .models import OpenPage
+from .page_fetcher import PageContent
 
 FIRST_CHUNK_INDEX = 1
 

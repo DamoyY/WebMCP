@@ -1,10 +1,10 @@
 from __future__ import annotations
 import re
-from chunking import TokenChunker
-from config import ChunkingConfig, FindConfig
-from models import FindPage, FindRequest
-from page_fetcher import PageContent
-from tools import _find_in_page, _snippet_tokens_for_request
+from web_mcp.chunking import TokenChunker
+from web_mcp.config import ChunkingConfig, FindConfig
+from web_mcp.models import FindPage, FindRequest
+from web_mcp.page_fetcher import PageContent
+from web_mcp.tools import _find_in_page, _snippet_tokens_for_request
 
 
 class _Config:
